@@ -124,14 +124,22 @@ class TextCopyApp:
 
                 # Show notification
                 if self.config.get('show_notifications', True):
+                    output_format = self.config.get('output_format', 'both')
+                    format_msg = f"Format: {output_format}"
                     self._show_notification(
-                        f"Captured {len(capture.text)} characters",
-                        f"From: {capture.source or 'Unknown'}"
+                        f"✓ Captured {len(capture.text)} characters",
+                        f"From: {capture.source or 'Unknown'} - {format_msg}"
                     )
 
                 self.logger.info(f"✓ Successfully captured and saved {len(capture.text)} characters")
             else:
-                self.logger.error("✗ Failed to save capture")
+                self.logger.error("✗ Failed to save capture - check textcopy.log for details")
+                # Show error notification
+                if self.config.get('show_notifications', True):
+                    self._show_notification(
+                        "✗ Capture failed",
+                        "Failed to save - check textcopy.log"
+                    )
         else:
             self.logger.warning("✗ No text captured")
 

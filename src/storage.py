@@ -8,7 +8,7 @@ from typing import Optional
 from docx import Document
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
-from capture import CapturedText
+from .capture import CapturedText
 
 
 class StorageManager:
@@ -35,19 +35,24 @@ class StorageManager:
             True if successful, False otherwise
         """
         output_format = self.config.get('output_format', 'both')
-        success = True
+        word_success = True
+        text_success = True
 
         try:
             if output_format in ['word', 'both']:
-                success &= self.save_to_word(capture)
+                word_success = self.save_to_word(capture)
+                if not word_success:
+                    self.logger.error("Failed to save to Word document")
 
             if output_format in ['txt', 'both']:
-                success &= self.save_to_text(capture)
+                text_success = self.save_to_text(capture)
+                if not text_success:
+                    self.logger.error("Failed to save to text file")
 
-            return success
+            return word_success and text_success
 
         except Exception as e:
-            self.logger.error(f"Error saving capture: {e}")
+            self.logger.error(f"Error saving capture: {e}", exc_info=True)
             return False
 
     def save_to_word(self, capture: CapturedText) -> bool:
@@ -62,11 +67,14 @@ class StorageManager:
         """
         try:
             word_path = self.config.get_word_output_path()
+            self.logger.debug(f"Word output path: {word_path}")
 
             # Load existing document or create new one
             if word_path.exists():
+                self.logger.debug(f"Loading existing Word document: {word_path}")
                 doc = Document(str(word_path))
             else:
+                self.logger.debug("Creating new Word document")
                 doc = Document()
                 self._add_document_header(doc)
 
@@ -116,13 +124,16 @@ class StorageManager:
                 doc.add_page_break()
 
             # Save document
+            self.logger.debug(f"Saving Word document to: {word_path}")
             doc.save(str(word_path))
-            self.logger.info(f"Saved to Word document: {word_path}")
+            self.logger.info(f"✓ Saved to Word document: {word_path}")
 
             return True
 
         except Exception as e:
-            self.logger.error(f"Error saving to Word: {e}")
+            self.logger.error(f"Error saving to Word: {e}", exc_info=True)
+            import traceback
+            self.logger.error(f"Full traceback: {traceback.format_exc()}")
             return False
 
     def save_to_text(self, capture: CapturedText) -> bool:

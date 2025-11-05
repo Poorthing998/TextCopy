@@ -44,5 +44,5 @@ max_capture_length: 10000 # Maximum characters per capture (0 = unlimited)
 deduplicate: true         # Avoid saving duplicate consecutive captures
 
 # Logging
-log_level: "INFO"         # Options: "DEBUG", "INFO", "WARNING", "ERROR"
+log_level: "DEBUG"        # Options: "DEBUG", "INFO", "WARNING", "ERROR"
 log_file: "textcopy.log"
