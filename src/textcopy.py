@@ -10,12 +10,9 @@ from pathlib import Path
 from pynput import keyboard
 from typing import Optional
 
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent))
-
-from config import Config
-from capture import TextCapture, CaptureHistory
-from storage import StorageManager
+from .config import Config
+from .capture import TextCapture, CaptureHistory
+from .storage import StorageManager
 
 
 class TextCopyApp:

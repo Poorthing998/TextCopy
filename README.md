@@ -47,12 +47,29 @@ python src/textcopy.py
 
 ### Basic Usage
 
-1. Start TextCopy:
+1. Start TextCopy (choose one method):
+
+   **Method 1 - Recommended (works on all platforms):**
+   ```bash
+   python -m src
+   ```
+
+   **Method 2 - Using launcher:**
+   ```bash
+   python run.py
+   ```
+
+   **Method 3 - Windows batch file:**
+   ```cmd
+   run.bat
+   ```
+
+   **Method 4 - Direct execution:**
    ```bash
    python src/textcopy.py
    ```
 
-2. The application runs in the background (you'll see a tray icon or console message)
+2. The application runs in the background (you'll see console messages)
 
 3. Select text anywhere on your system and press `Ctrl+Shift+C`
 
