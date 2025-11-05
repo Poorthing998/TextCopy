@@ -35,6 +35,7 @@ class TextCopyApp:
         self.is_paused = False
         self.is_running = True
         self.listener: Optional[keyboard.GlobalHotKeys] = None
+        self.last_capture_time = 0  # Prevent double-triggers
 
         self.logger.info("TextCopy initialized")
 
@@ -102,6 +103,14 @@ class TextCopyApp:
 
     def on_capture_hotkey(self) -> None:
         """Handle capture hotkey press"""
+        # Prevent double-triggers with cooldown
+        current_time = time.time()
+        cooldown = self.config.get('copy_delay', 0.3)
+        if current_time - self.last_capture_time < cooldown:
+            self.logger.debug("Ignoring double-trigger")
+            return
+        self.last_capture_time = current_time
+
         if self.is_paused:
             self.logger.info("Capture is paused. Press pause hotkey to resume.")
             return
@@ -119,26 +128,23 @@ class TextCopyApp:
                 # Add to history
                 self.history.add_capture(capture)
 
-                # Show notification
+                # Show simple notification
                 if self.config.get('show_notifications', True):
-                    output_format = self.config.get('output_format', 'both')
-                    format_msg = f"Format: {output_format}"
                     self._show_notification(
-                        f"✓ Captured {len(capture.text)} characters",
-                        f"From: {capture.source or 'Unknown'} - {format_msg}"
+                        "✓ Captured!",
+                        f"{len(capture.text)} characters saved"
                     )
 
-                self.logger.info(f"✓ Successfully captured and saved {len(capture.text)} characters")
+                self.logger.info(f"✓ Capture saved")
             else:
-                self.logger.error("✗ Failed to save capture - check textcopy.log for details")
-                # Show error notification
+                self.logger.error("✗ Save failed")
                 if self.config.get('show_notifications', True):
                     self._show_notification(
-                        "✗ Capture failed",
-                        "Failed to save - check textcopy.log"
+                        "✗ Failed",
+                        "Could not save - close Word file"
                     )
         else:
-            self.logger.warning("✗ No text captured")
+            self.logger.warning("✗ No text in clipboard - copy something first")
 
     def on_pause_hotkey(self) -> None:
         """Handle pause/resume hotkey press"""

@@ -23,6 +23,7 @@ class StorageManager:
         """
         self.config = config
         self.logger = logging.getLogger(__name__)
+        self.capture_count = 0  # Simple counter for numbering captures
 
     def save_capture(self, capture: CapturedText) -> bool:
         """
@@ -57,7 +58,7 @@ class StorageManager:
 
     def save_to_word(self, capture: CapturedText) -> bool:
         """
-        Save capture to Word document
+        Save capture to Word document - SIMPLIFIED
 
         Args:
             capture: CapturedText object to save
@@ -66,7 +67,6 @@ class StorageManager:
             True if successful, False otherwise
         """
         word_path = self.config.get_word_output_path()
-        self.logger.debug(f"Word output path: {word_path}")
 
         # Try to save, with fallback if file is locked (Windows)
         use_backup = self.config.get('use_backup_on_lock', True)
@@ -78,95 +78,74 @@ class StorageManager:
                 if attempt == 0:
                     current_path = word_path
                 else:
-                    # Use backup filename if original is locked (Windows compatibility)
                     backup_name = word_path.stem + f"_backup{attempt}" + word_path.suffix
                     current_path = word_path.parent / backup_name
-                    self.logger.warning(f"Original file locked, trying: {current_path}")
 
                 # Load existing document or create new one
                 if current_path.exists():
-                    self.logger.debug(f"Loading existing Word document: {current_path}")
                     doc = Document(str(current_path))
+                    # Count existing numbered items to continue numbering
+                    self.capture_count = self._count_captures(doc)
                 else:
-                    self.logger.debug("Creating new Word document")
                     doc = Document()
-                    self._add_document_header(doc)
+                    self.capture_count = 0
 
-                # Add separator if configured
-                if self.config.get('include_separator', True) and len(doc.paragraphs) > 0:
-                    separator = doc.add_paragraph()
-                    run = separator.add_run('═' * 60)
-                    run.font.color.rgb = RGBColor(128, 128, 128)
-                    separator.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                # Increment counter for this capture
+                self.capture_count += 1
 
-                # Add timestamp heading if configured
-                if self.config.get('include_timestamp', True):
-                    heading = doc.add_paragraph()
-                    timestamp_run = heading.add_run(
-                        f"📅 Captured: {capture.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-                    )
-                    timestamp_run.font.size = Pt(self.config.get('word_format.heading_size', 12))
-                    timestamp_run.font.bold = True
-                    timestamp_run.font.color.rgb = RGBColor(0, 102, 204)
+                # SIMPLE FORMAT: Just number and text
+                para = doc.add_paragraph()
 
-                # Add source if available
-                if self.config.get('include_source', True) and capture.source:
-                    source_para = doc.add_paragraph()
-                    source_run = source_para.add_run(f"📱 Source: {capture.source}")
-                    source_run.font.size = Pt(10)
-                    source_run.font.italic = True
-                    source_run.font.color.rgb = RGBColor(102, 102, 102)
+                # Add number
+                number_run = para.add_run(f"{self.capture_count}. ")
+                number_run.font.bold = True
+                number_run.font.size = Pt(11)
 
-                # Add divider
-                if self.config.get('include_timestamp', True) or (self.config.get('include_source', True) and capture.source):
-                    divider = doc.add_paragraph()
-                    run = divider.add_run('─' * 60)
-                    run.font.color.rgb = RGBColor(180, 180, 180)
+                # Add text
+                text_run = para.add_run(capture.text)
+                text_run.font.name = "Calibri"
+                text_run.font.size = Pt(11)
 
-                # Add captured text
-                text_para = doc.add_paragraph()
-                text_run = text_para.add_run(capture.text)
-
-                # Apply formatting
-                font_name = self.config.get('word_format.font_name', 'Calibri')
-                font_size = self.config.get('word_format.font_size', 11)
-                text_run.font.name = font_name
-                text_run.font.size = Pt(font_size)
-
-                # Add page break if configured
-                if self.config.get('word_format.add_page_break', False):
-                    doc.add_page_break()
+                # Add blank line
+                doc.add_paragraph()
 
                 # Save document
-                self.logger.debug(f"Saving Word document to: {current_path}")
                 doc.save(str(current_path))
 
                 if attempt > 0:
-                    self.logger.warning(f"⚠ Saved to backup file: {current_path}")
-                    self.logger.warning(f"⚠ Please close {word_path.name} and merge files manually")
+                    self.logger.info(f"Saved to backup: {current_path.name}")
                 else:
-                    self.logger.info(f"✓ Saved to Word document: {current_path}")
+                    self.logger.info(f"✓ Saved capture #{self.capture_count}")
 
                 return True
 
-            except PermissionError as e:
+            except PermissionError:
                 if attempt < max_attempts - 1:
-                    self.logger.warning(f"File is locked (attempt {attempt + 1}/{max_attempts}): {current_path}")
-                    self.logger.warning(f"This usually means the file is open in Word or another program")
+                    self.logger.warning(f"File locked, trying backup...")
                     continue
                 else:
-                    self.logger.error(f"Failed to save after {max_attempts} attempts")
-                    self.logger.error(f"⚠ SOLUTION: Close {word_path.name} in Word and try again")
+                    self.logger.error(f"Cannot save - close {word_path.name} in Word")
                     return False
 
             except Exception as e:
-                self.logger.error(f"Error saving to Word: {e}", exc_info=True)
-                import traceback
-                self.logger.error(f"Full traceback: {traceback.format_exc()}")
+                self.logger.error(f"Error: {e}")
                 return False
 
-        # Should never reach here
         return False
+
+    def _count_captures(self, doc: Document) -> int:
+        """Count how many captures are already in the document"""
+        count = 0
+        for para in doc.paragraphs:
+            text = para.text.strip()
+            if text and text[0].isdigit() and '. ' in text:
+                try:
+                    num = int(text.split('.')[0])
+                    if num > count:
+                        count = num
+                except:
+                    pass
+        return count
 
     def save_to_text(self, capture: CapturedText) -> bool:
         """

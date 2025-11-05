@@ -1,18 +1,18 @@
 # TextCopy Configuration File
 
 # Hotkey configuration
-# Format: "ctrl+shift+c", "alt+c", "ctrl+alt+shift+c"
+# Format: "ctrl+alt+c", "alt+c", "f9"
 # Note: Use lowercase for keys
-hotkey: "ctrl+shift+c"
+hotkey: "ctrl+alt+c"
 
 # Pause/Resume hotkey
-pause_hotkey: "ctrl+shift+p"
+pause_hotkey: "ctrl+alt+p"
 
 # View captures hotkey
-view_hotkey: "ctrl+shift+v"
+view_hotkey: "ctrl+alt+v"
 
 # Exit hotkey
-exit_hotkey: "ctrl+shift+q"
+exit_hotkey: "ctrl+alt+q"
 
 # Output settings
 output_format: "both"  # Options: "word", "txt", "both"
@@ -20,11 +20,11 @@ output_directory: "captures"
 word_file: "my_captures.docx"
 text_file: "captures.txt"
 
-# Capture settings
-include_timestamp: true
-include_source: true      # Try to detect and include source application
-include_separator: true   # Add visual separators between captures
-auto_categorize: false    # Group captures by date or source (future feature)
+# Capture settings - SIMPLIFIED
+include_timestamp: false   # Just use numbers (1. 2. 3.)
+include_source: false      # Don't detect source
+include_separator: false   # No fancy separators
+auto_categorize: false     # Keep it simple
 
 # Formatting options
 word_format:
@@ -37,13 +37,13 @@ word_format:
 show_notifications: true  # Show notification on successful capture
 notification_sound: false # Play sound on capture
 
-# Advanced settings
-auto_copy: true           # Automatically copy selected text (Ctrl+C) before capturing
-copy_delay: 0.1           # Delay in seconds after auto-copy before reading clipboard
-max_capture_length: 10000 # Maximum characters per capture (0 = unlimited)
-deduplicate: true         # Avoid saving duplicate consecutive captures
-use_backup_on_lock: true  # Create backup file if main file is locked (recommended for Windows)
+# Advanced settings - SIMPLIFIED
+auto_copy: false          # Don't auto-copy, just read clipboard (more reliable)
+copy_delay: 0.3           # Wait longer to avoid double-triggers
+max_capture_length: 0     # No limit
+deduplicate: false        # Allow duplicates if user wants them
+use_backup_on_lock: true  # Keep this for Windows
 
 # Logging
-log_level: "DEBUG"        # Options: "DEBUG", "INFO", "WARNING", "ERROR"
+log_level: "INFO"         # Less verbose
 log_file: "textcopy.log"
