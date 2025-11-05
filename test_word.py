@@ -5,13 +5,13 @@ Test script to verify TextCopy Word document functionality
 import sys
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent / 'src'))
+# Add parent directory to path to import src as a package
+sys.path.insert(0, str(Path(__file__).parent))
 
 from datetime import datetime
-from config import Config
-from capture import CapturedText
-from storage import StorageManager
+from src.config import Config
+from src.capture import CapturedText
+from src.storage import StorageManager
 
 
 def test_word_save():
