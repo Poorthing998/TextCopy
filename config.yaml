@@ -42,6 +42,7 @@ auto_copy: true           # Automatically copy selected text (Ctrl+C) before cap
 copy_delay: 0.1           # Delay in seconds after auto-copy before reading clipboard
 max_capture_length: 10000 # Maximum characters per capture (0 = unlimited)
 deduplicate: true         # Avoid saving duplicate consecutive captures
+use_backup_on_lock: true  # Create backup file if main file is locked (recommended for Windows)
 
 # Logging
 log_level: "DEBUG"        # Options: "DEBUG", "INFO", "WARNING", "ERROR"

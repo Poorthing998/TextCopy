@@ -65,76 +65,108 @@ class StorageManager:
         Returns:
             True if successful, False otherwise
         """
-        try:
-            word_path = self.config.get_word_output_path()
-            self.logger.debug(f"Word output path: {word_path}")
+        word_path = self.config.get_word_output_path()
+        self.logger.debug(f"Word output path: {word_path}")
 
-            # Load existing document or create new one
-            if word_path.exists():
-                self.logger.debug(f"Loading existing Word document: {word_path}")
-                doc = Document(str(word_path))
-            else:
-                self.logger.debug("Creating new Word document")
-                doc = Document()
-                self._add_document_header(doc)
+        # Try to save, with fallback if file is locked (Windows)
+        use_backup = self.config.get('use_backup_on_lock', True)
+        max_attempts = 3 if use_backup else 1
 
-            # Add separator if configured
-            if self.config.get('include_separator', True) and len(doc.paragraphs) > 0:
-                separator = doc.add_paragraph()
-                run = separator.add_run('═' * 60)
-                run.font.color.rgb = RGBColor(128, 128, 128)
-                separator.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+        for attempt in range(max_attempts):
+            try:
+                # Determine which file to use
+                if attempt == 0:
+                    current_path = word_path
+                else:
+                    # Use backup filename if original is locked (Windows compatibility)
+                    backup_name = word_path.stem + f"_backup{attempt}" + word_path.suffix
+                    current_path = word_path.parent / backup_name
+                    self.logger.warning(f"Original file locked, trying: {current_path}")
 
-            # Add timestamp heading if configured
-            if self.config.get('include_timestamp', True):
-                heading = doc.add_paragraph()
-                timestamp_run = heading.add_run(
-                    f"📅 Captured: {capture.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
-                )
-                timestamp_run.font.size = Pt(self.config.get('word_format.heading_size', 12))
-                timestamp_run.font.bold = True
-                timestamp_run.font.color.rgb = RGBColor(0, 102, 204)
+                # Load existing document or create new one
+                if current_path.exists():
+                    self.logger.debug(f"Loading existing Word document: {current_path}")
+                    doc = Document(str(current_path))
+                else:
+                    self.logger.debug("Creating new Word document")
+                    doc = Document()
+                    self._add_document_header(doc)
 
-            # Add source if available
-            if self.config.get('include_source', True) and capture.source:
-                source_para = doc.add_paragraph()
-                source_run = source_para.add_run(f"📱 Source: {capture.source}")
-                source_run.font.size = Pt(10)
-                source_run.font.italic = True
-                source_run.font.color.rgb = RGBColor(102, 102, 102)
+                # Add separator if configured
+                if self.config.get('include_separator', True) and len(doc.paragraphs) > 0:
+                    separator = doc.add_paragraph()
+                    run = separator.add_run('═' * 60)
+                    run.font.color.rgb = RGBColor(128, 128, 128)
+                    separator.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
 
-            # Add divider
-            if self.config.get('include_timestamp', True) or (self.config.get('include_source', True) and capture.source):
-                divider = doc.add_paragraph()
-                run = divider.add_run('─' * 60)
-                run.font.color.rgb = RGBColor(180, 180, 180)
+                # Add timestamp heading if configured
+                if self.config.get('include_timestamp', True):
+                    heading = doc.add_paragraph()
+                    timestamp_run = heading.add_run(
+                        f"📅 Captured: {capture.timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+                    )
+                    timestamp_run.font.size = Pt(self.config.get('word_format.heading_size', 12))
+                    timestamp_run.font.bold = True
+                    timestamp_run.font.color.rgb = RGBColor(0, 102, 204)
 
-            # Add captured text
-            text_para = doc.add_paragraph()
-            text_run = text_para.add_run(capture.text)
+                # Add source if available
+                if self.config.get('include_source', True) and capture.source:
+                    source_para = doc.add_paragraph()
+                    source_run = source_para.add_run(f"📱 Source: {capture.source}")
+                    source_run.font.size = Pt(10)
+                    source_run.font.italic = True
+                    source_run.font.color.rgb = RGBColor(102, 102, 102)
 
-            # Apply formatting
-            font_name = self.config.get('word_format.font_name', 'Calibri')
-            font_size = self.config.get('word_format.font_size', 11)
-            text_run.font.name = font_name
-            text_run.font.size = Pt(font_size)
+                # Add divider
+                if self.config.get('include_timestamp', True) or (self.config.get('include_source', True) and capture.source):
+                    divider = doc.add_paragraph()
+                    run = divider.add_run('─' * 60)
+                    run.font.color.rgb = RGBColor(180, 180, 180)
 
-            # Add page break if configured
-            if self.config.get('word_format.add_page_break', False):
-                doc.add_page_break()
+                # Add captured text
+                text_para = doc.add_paragraph()
+                text_run = text_para.add_run(capture.text)
 
-            # Save document
-            self.logger.debug(f"Saving Word document to: {word_path}")
-            doc.save(str(word_path))
-            self.logger.info(f"✓ Saved to Word document: {word_path}")
+                # Apply formatting
+                font_name = self.config.get('word_format.font_name', 'Calibri')
+                font_size = self.config.get('word_format.font_size', 11)
+                text_run.font.name = font_name
+                text_run.font.size = Pt(font_size)
 
-            return True
+                # Add page break if configured
+                if self.config.get('word_format.add_page_break', False):
+                    doc.add_page_break()
 
-        except Exception as e:
-            self.logger.error(f"Error saving to Word: {e}", exc_info=True)
-            import traceback
-            self.logger.error(f"Full traceback: {traceback.format_exc()}")
-            return False
+                # Save document
+                self.logger.debug(f"Saving Word document to: {current_path}")
+                doc.save(str(current_path))
+
+                if attempt > 0:
+                    self.logger.warning(f"⚠ Saved to backup file: {current_path}")
+                    self.logger.warning(f"⚠ Please close {word_path.name} and merge files manually")
+                else:
+                    self.logger.info(f"✓ Saved to Word document: {current_path}")
+
+                return True
+
+            except PermissionError as e:
+                if attempt < max_attempts - 1:
+                    self.logger.warning(f"File is locked (attempt {attempt + 1}/{max_attempts}): {current_path}")
+                    self.logger.warning(f"This usually means the file is open in Word or another program")
+                    continue
+                else:
+                    self.logger.error(f"Failed to save after {max_attempts} attempts")
+                    self.logger.error(f"⚠ SOLUTION: Close {word_path.name} in Word and try again")
+                    return False
+
+            except Exception as e:
+                self.logger.error(f"Error saving to Word: {e}", exc_info=True)
+                import traceback
+                self.logger.error(f"Full traceback: {traceback.format_exc()}")
+                return False
+
+        # Should never reach here
+        return False
 
     def save_to_text(self, capture: CapturedText) -> bool:
         """
