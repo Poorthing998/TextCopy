@@ -1,0 +1,48 @@
+# TextCopy Configuration File
+
+# Hotkey configuration
+# Format: "ctrl+shift+c", "alt+c", "ctrl+alt+shift+c"
+# Note: Use lowercase for keys
+hotkey: "ctrl+shift+c"
+
+# Pause/Resume hotkey
+pause_hotkey: "ctrl+shift+p"
+
+# View captures hotkey
+view_hotkey: "ctrl+shift+v"
+
+# Exit hotkey
+exit_hotkey: "ctrl+shift+q"
+
+# Output settings
+output_format: "both"  # Options: "word", "txt", "both"
+output_directory: "captures"
+word_file: "my_captures.docx"
+text_file: "captures.txt"
+
+# Capture settings
+include_timestamp: true
+include_source: true      # Try to detect and include source application
+include_separator: true   # Add visual separators between captures
+auto_categorize: false    # Group captures by date or source (future feature)
+
+# Formatting options
+word_format:
+  font_name: "Calibri"
+  font_size: 11
+  heading_size: 12
+  add_page_break: false   # Add page break between captures
+
+# Notification settings
+show_notifications: true  # Show notification on successful capture
+notification_sound: false # Play sound on capture
+
+# Advanced settings
+auto_copy: true           # Automatically copy selected text (Ctrl+C) before capturing
+copy_delay: 0.1           # Delay in seconds after auto-copy before reading clipboard
+max_capture_length: 10000 # Maximum characters per capture (0 = unlimited)
+deduplicate: true         # Avoid saving duplicate consecutive captures
+
+# Logging
+log_level: "INFO"         # Options: "DEBUG", "INFO", "WARNING", "ERROR"
+log_file: "textcopy.log"

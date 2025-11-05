@@ -1,0 +1,14 @@
+# TextCopy Dependencies
+
+# Core functionality
+pynput>=1.7.6          # Global hotkey listener
+pyperclip>=1.8.2       # Clipboard access
+python-docx>=1.1.0     # Word document creation
+PyYAML>=6.0.1          # Configuration file parsing
+
+# Optional but recommended
+pygetwindow>=0.0.9     # Window management (source detection on Windows)
+psutil>=5.9.0          # Process information (better source detection)
+
+# For better cross-platform support
+pyobjc-framework-Cocoa>=9.0; sys_platform == 'darwin'  # macOS specific
